@@ -853,7 +853,7 @@ bool OptionManager::Read(const std::string& path) {
   try {
     std::ifstream file(path);
     CHECK(file.is_open()) << path;
-    config::store(config::parse_config_file(file, *desc_), vmap);
+    config::store(config::parse_config_file(file, *desc_, true), vmap);
     vmap.notify();
   } catch (std::exception& e) {
     std::cout << "ERROR: Failed to parse options " << e.what() << "."
