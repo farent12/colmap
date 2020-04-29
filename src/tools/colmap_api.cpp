@@ -206,4 +206,60 @@ namespace colmap {
 
         return EXIT_SUCCESS;
         }
+
+    int UndistortImages(const std::string& project_path) {
+        std::string model_input_path;
+        std::string undistorter_output_path;
+        std::string undistorter_output_type = "COLMAP";
+
+        UndistortCameraOptions undistort_camera_options;
+
+        OptionManager options;
+        options.AddImageOptions();
+        options.AddRequiredOption("model_input_path", &model_input_path);
+        options.AddRequiredOption("undistorter_output_path", &undistorter_output_path);
+        options.AddDefaultOption("undistorter_output_type", &undistorter_output_type,
+                                "{COLMAP, PMVS, CMP-MVS}");
+        options.AddDefaultOption("blank_pixels",
+                                 &undistort_camera_options.blank_pixels);
+        options.AddDefaultOption("min_scale", &undistort_camera_options.min_scale);
+        options.AddDefaultOption("max_scale", &undistort_camera_options.max_scale);
+        options.AddDefaultOption("max_image_size",
+                                 &undistort_camera_options.max_image_size);
+        options.AddDefaultOption("roi_min_x", &undistort_camera_options.roi_min_x);
+        options.AddDefaultOption("roi_min_y", &undistort_camera_options.roi_min_y);
+        options.AddDefaultOption("roi_max_x", &undistort_camera_options.roi_max_x);
+        options.AddDefaultOption("roi_max_y", &undistort_camera_options.roi_max_y);
+        options.Read(project_path);
+
+        CreateDirIfNotExists(undistorter_output_path);
+
+        Reconstruction reconstruction;
+        reconstruction.Read(model_input_path);
+
+        std::unique_ptr<Thread> undistorter;
+        if (undistorter_output_type == "COLMAP") {
+            undistorter.reset(new COLMAPUndistorter(undistort_camera_options,
+                                                    reconstruction, *options.image_path,
+                                                    undistorter_output_path));
+        } else if (undistorter_output_type == "PMVS") {
+            undistorter.reset(new PMVSUndistorter(undistort_camera_options,
+                                                reconstruction, *options.image_path,
+                                                undistorter_output_path));
+        } else if (undistorter_output_type == "CMP-MVS") {
+            undistorter.reset(new CMPMVSUndistorter(undistort_camera_options,
+                                                    reconstruction, *options.image_path,
+                                                    undistorter_output_path));
+        } else {
+            std::cerr << "ERROR: Invalid `output_type` - supported values are "
+                        "{'COLMAP', 'PMVS', 'CMP-MVS'}."
+                    << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        undistorter->Start();
+        undistorter->Wait();
+
+        return EXIT_SUCCESS;
+        }
 }
