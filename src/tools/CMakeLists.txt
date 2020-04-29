@@ -31,4 +31,7 @@
 
 set(FOLDER_NAME "tools")
 
-# COLMAP_ADD_EXECUTABLE(example example.cc)
+COLMAP_ADD_SOURCES(
+        colmap_api.cpp colmap_api.h
+)
+
