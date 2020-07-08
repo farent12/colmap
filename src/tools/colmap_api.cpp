@@ -261,5 +261,15 @@ namespace colmap {
         undistorter->Wait();
 
         return EXIT_SUCCESS;
-        }
+    }
+
+    int CreateDatabase(const std::string& project_path) {
+        OptionManager options;
+        options.AddDatabaseOptions();
+        options.Read(project_path);
+
+        Database database(*options.database_path);
+
+        return EXIT_SUCCESS;
+    }
 }

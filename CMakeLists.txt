@@ -67,6 +67,7 @@ set(CUDA_ARCHS "Auto" CACHE STRING "List of CUDA architectures for which to \
 generate code, e.g., Auto, All, Maxwell, Pascal, ...")
 
 if(TESTS_ENABLED)
+    message("Enable testing")
     enable_testing()
 endif()
 

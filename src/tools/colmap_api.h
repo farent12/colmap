@@ -9,6 +9,7 @@ namespace colmap {
     int ReconstructSparse(const std::string& project_path);
     int ConvertModel(const std::string& project_path);
     int UndistortImages(const std::string& project_path);
+    int CreateDatabase(const std::string& project_path);
 }
 
 #endif //COLMAP_COLMAP_API_H
