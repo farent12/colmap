@@ -272,4 +272,44 @@ namespace colmap {
 
         return EXIT_SUCCESS;
     }
+
+    int PatchMatchStereo(const std::string& project_path) {
+        #ifndef CUDA_ENABLED
+        std::cerr << "ERROR: Dense stereo reconstruction requires CUDA, which is not "
+                    "available on your system."
+                    << std::endl;
+        return EXIT_FAILURE;
+        #else   // CUDA_ENABLED
+        std::string dense_workspace_path;
+        std::string dense_workspace_format = "COLMAP";
+        std::string pmvs_option_name = "option-all";
+
+        OptionManager options;
+        options.AddRequiredOption(
+            "dense_workspace_path", &dense_workspace_path,
+            "Path to the folder containing the undistorted images");
+        options.AddDefaultOption("dense_workspace_format", &dense_workspace_format,
+                                "{COLMAP, PMVS}");
+        options.AddDefaultOption("pmvs_option_name", &pmvs_option_name);
+        options.AddPatchMatchStereoOptions();
+        options.Read(project_path);
+
+        StringToLower(&dense_workspace_format);
+        if (dense_workspace_format != "colmap" && dense_workspace_format != "pmvs") {
+            std::cout << "ERROR: Invalid `workspace_format` - supported values are "
+                        "'COLMAP' or 'PMVS'."
+                    << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        mvs::PatchMatchController controller(*options.patch_match_stereo,
+                                            dense_workspace_path, dense_workspace_format,
+                                            pmvs_option_name);
+
+        controller.Start();
+        controller.Wait();
+
+        return EXIT_SUCCESS;
+        #endif  // CUDA_ENABLED
+    }
 }
