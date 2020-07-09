@@ -312,4 +312,104 @@ namespace colmap {
         return EXIT_SUCCESS;
         #endif  // CUDA_ENABLED
     }
+
+    int StereoFuser(const std::string& project_path) {
+        std::string dense_workspace_path;
+        std::string input_type = "geometric";
+        std::string workspace_format = "COLMAP";
+        std::string pmvs_option_name = "option-all";
+        std::string dense_output_path;
+
+        OptionManager options;
+        options.AddRequiredOption("dense_workspace_path", &dense_workspace_path);
+        options.AddDefaultOption("workspace_format", &workspace_format,
+                                "{COLMAP, PMVS}");
+        options.AddDefaultOption("pmvs_option_name", &pmvs_option_name);
+        options.AddDefaultOption("input_type", &input_type,
+                                "{photometric, geometric}");
+        options.AddRequiredOption("dense_output_path", &dense_output_path);
+        options.AddStereoFusionOptions();
+        options.Read(project_path); 
+        StringToLower(&workspace_format);
+        if (workspace_format != "colmap" && workspace_format != "pmvs") {
+            std::cout << "ERROR: Invalid `workspace_format` - supported values are "
+                        "'COLMAP' or 'PMVS'."
+                    << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        StringToLower(&input_type);
+        if (input_type != "photometric" && input_type != "geometric") {
+            std::cout << "ERROR: Invalid input type - supported values are "
+                        "'photometric' and 'geometric'."
+                    << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        mvs::StereoFusion fuser(*options.stereo_fusion, dense_workspace_path,
+                                workspace_format, pmvs_option_name, input_type);
+
+        fuser.Start();
+        fuser.Wait();
+
+        std::cout << "Writing output: " << dense_output_path << std::endl;
+        WriteBinaryPlyPoints(dense_output_path, fuser.GetFusedPoints());
+        mvs::WritePointsVisibility(dense_output_path + ".vis",
+                                    fuser.GetFusedPointsVisibility());
+
+        return EXIT_SUCCESS;
+    }
+
+    int PoissonMesher(const std::string& project_path) {
+        std::string poisson_input_path;
+        std::string poisson_output_path;
+
+        OptionManager options;
+        options.AddRequiredOption("poisson_input_path", &poisson_input_path);
+        options.AddRequiredOption("possion_output_path", &poisson_output_path);
+        options.AddPoissonMeshingOptions();
+        options.Read(project_path);
+
+        CHECK(mvs::PoissonMeshing(*options.poisson_meshing, poisson_input_path, poisson_output_path));
+
+        return EXIT_SUCCESS;
+    }
+
+    int DelaunayMesher(const std::string& project_path) {
+        #ifndef CGAL_ENABLED
+        std::cerr << "ERROR: Delaunay meshing requires CGAL, which is not "
+                    "available on your system."
+                    << std::endl;
+        return EXIT_FAILURE;
+        #else   // CGAL_ENABLED
+        std::string delaunay_input_path;
+        std::string delaunay_input_type = "dense";
+        std::string delaunay_output_path;
+
+        OptionManager options;
+        options.AddRequiredOption(
+            "delaunay_input_path", &delaunay_input_path,
+            "Path to either the dense workspace folder or the sparse reconstruction");
+        options.AddDefaultOption("delaunay_input_type", &delaunay_input_type, "{dense, sparse}");
+        options.AddRequiredOption("delaunay_output_path", &delaunay_output_path);
+        options.AddDelaunayMeshingOptions();
+        options.Read(project_path);
+
+        StringToLower(&delaunay_input_type);
+        if (delaunay_input_type == "sparse") {
+            mvs::SparseDelaunayMeshing(*options.delaunay_meshing, delaunay_input_path,
+                                    delaunay_output_path);
+        } else if (delaunay_input_type == "dense") {
+            mvs::DenseDelaunayMeshing(*options.delaunay_meshing, delaunay_input_path,
+                                    delaunay_output_path);
+        } else {
+            std::cout << "ERROR: Invalid input type - "
+                        "supported values are 'sparse' and 'dense'."
+                    << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        return EXIT_SUCCESS;
+        #endif  // CGAL_ENABLED
+    }
 }

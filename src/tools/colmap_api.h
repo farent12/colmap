@@ -8,9 +8,12 @@ namespace colmap {
     int MatchFeaturesExhaustively(const std::string& project_path);
     int ReconstructSparse(const std::string& project_path);
     int ConvertModel(const std::string& project_path);
-    int UndistortImages(const std::string& project_path);
     int CreateDatabase(const std::string& project_path);
+    int UndistortImages(const std::string& project_path);
     int PatchMatchStereo(const std::string& project_path);
+    int StereoFuser(const std::string& project_path);
+    int PoissonMesher(const std::string& project_path);
+    int DelaunayMesher(const std::string& project_path);
 }
 
 #endif //COLMAP_COLMAP_API_H
